@@ -1,0 +1,11 @@
+# Install PyTorch first (torch, torchvision) using the index URL that matches
+# your hardware — see README.md — then: pip install -r requirements.txt
+segmentation-models-pytorch
+pytorch-lightning
+albumentations
+numpy
+matplotlib
+Pillow
+
+# Notebook runtime (omit if you already have Jupyter installed)
+notebook
