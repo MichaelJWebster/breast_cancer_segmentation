@@ -35,11 +35,13 @@ The data root is set once via `DATA_DIR = Path(os.environ.get("BC_DATA_DIR", "./
 
 3. **Split + transforms:** `random_split` (seed 42) produces train/val `Subset`s of the *transform-less* dataset, then each is wrapped in **`SubsetWithTransform`**, which applies Albumentations (`A.Compose` with `mask=` so the same geometric ops apply to image and mask). Train gets augmentation (brightness/contrast, CLAHE, gamma, flips, rotate); val gets only resize+normalize+`ToTensorV2`.
 
-4. **Model — `BreastCancerMammogramModel(pl.LightningModule)`:** `smp.create_model("UNET", encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=3)`. Loss = **Dice (multiclass, from_logits) + weighted CrossEntropy**, where the CE class weights are inverse-frequency weights computed from the train benign/malignant counts (background weight fixed at 1.0) to counter class imbalance. Metrics use `smp.metrics` IoU (`micro-imagewise` and `micro`), aggregated in `shared_epoch_end`. Optimizer Adam (lr 2e-4) + `CosineAnnealingLR`.
+4. **Model — `BreastUltrasoundSegmentationModel(pl.LightningModule)`:** `smp.create_model("UNET", encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=3)`. Loss = **Dice (multiclass, from_logits) + weighted CrossEntropy**, where the CE class weights are inverse-frequency weights computed from the train benign/malignant counts (background weight fixed at 1.0) to counter class imbalance. Metrics use `smp.metrics` IoU (`micro-imagewise` and `micro`), aggregated in `shared_epoch_end`. Optimizer Adam (lr 2e-4) + `CosineAnnealingLR` over all training steps.
 
 ## Conventions / gotchas
 
 - Reproducibility seeds (42) are set globally in an early cell and inside the split helper; keep them if editing.
-- DataLoaders use `batch_size=32, num_workers=23` — tuned for a specific machine; lower `num_workers` on smaller boxes.
-- `EPOCHS=50` and the scheduler `T_max` are set independently in two places — keep them consistent if changing epoch count.
+- DataLoaders use `batch_size=32` and `num_workers=default_num_workers()` (CPU count − 1). The dataset classes must stay in `bc_data.py`: on macOS DataLoader workers are spawned and cannot unpickle classes defined in the notebook.
+- The cosine LR schedule spans the whole run (`T_max = self.trainer.estimated_stepping_batches`), so changing `EPOCHS` needs nothing else.
+- `TRAIN = False` (or `BC_TRAIN=0`) skips `trainer.fit` and loads the newest checkpoint in `lightning_logs/`; retrain after changing the model or data.
+- The IoU from `trainer.validate` averages over all classes **including background**, so it reads high (~0.93). The "Lesion-level metrics" section reports lesion-only IoU/Dice and image-level accuracy, raw and after `postprocess` (largest connected region + majority class).
 - Class imbalance handling is partly a work-in-progress (see the `FIXME` markdown cell about the loss function).

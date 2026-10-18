@@ -4,7 +4,7 @@ Breast cancer segmentation using the `segmentation-models-pytorch` library to pe
 
 ## Data
 
-The data comes from this [Kaggle competition](https://www.kaggle.com/competitions/breast-cancer-us-classification-ml-4-im-2025-2026/data). Download the dataset and place it in the `./data` directory so that the training and test sets live under `./data/complete_set`.
+The data comes from this [Kaggle competition](https://www.kaggle.com/competitions/breast-cancer-us-classification-ml-4-im-2025-2026/data) (you need to join the competition and accept its rules before you can download). Download the dataset and place it in the `./data` directory so that the training and test sets live under `./data/complete_set` (training images in `./data/complete_set/training_set/{benign,malignant}`). To keep the data elsewhere, set `BC_DATA_DIR` to the directory that contains `complete_set`.
 
 ## Environment Setup
 
@@ -60,6 +60,8 @@ pip install jupyterlab
 ```
 
 ### 6. Run the notebook
+
+Training uses `accelerator="auto"`: CUDA on an NVIDIA GPU, MPS on Apple Silicon, otherwise CPU. Set `BC_EPOCHS=1` for a quick smoke test.
 
 ```bash
 jupyter notebook bc_classification.ipynb
